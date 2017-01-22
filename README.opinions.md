@@ -77,7 +77,7 @@ one more.
 
 Stop trying to shoehorn sysadmin into non-programming-language config
 files. The end result will just be programs written in a bizarre
-dialect of brainfuck, with no tests.
+dialect of something, with no tests.
 
 # What does my ideal config mgmt system look like?
 

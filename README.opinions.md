@@ -12,10 +12,16 @@ direction of config management today.
 
 ## Facts are bad
 
-They encourage poor patterns, complicate configurations, litter the
-variable namespace with crap, fail in surprising ways. Collecting
-state from a system should be a deliberate action, considered
-carefully by the configuration writer.
+By facts, I mean data snippets gathered from the machine receiving
+configuration, e.g. what OS it's running, what its IP address is
+(usually derived by some terrible heuristic in everything but
+non-trivial cases), and so forth.
+
+Gathering and using these facts encourage poor patterns, complicate
+configurations, litter the variable namespace with crap, fail in
+surprising ways. Collecting state from a system that is by definition
+not in the state you expected it to be should be a deliberate action,
+considered carefully by the configuration writer.
 
 ## Premature optimization leads to painful DSLs
 

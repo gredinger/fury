@@ -16,14 +16,12 @@ package fury // import "go.universe.tf/fury"
 
 import (
 	"archive/tar"
-	"bufio"
 	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
 	"reflect"
 	"sort"
-	"sync"
 	"time"
 )
 
@@ -38,95 +36,6 @@ type File struct {
 	Group    string
 	Mode     int64
 	Contents []byte
-}
-
-// The thing that provides command running capability, I guess.
-type RunContext struct {
-	e         Executer
-	logOutput bool
-
-	mu     sync.Mutex
-	log    io.Writer
-	runNum int
-}
-
-type syncWriter struct {
-	sync.Mutex
-	w io.Writer
-}
-
-func (s *syncWriter) Write(b []byte) (int, error) {
-	s.Lock()
-	defer s.Unlock()
-	return s.w.Write(b)
-}
-
-func (r *RunContext) RunCommand(cmd Command) error {
-	if !r.logOutput {
-		return r.e.Run(cmd)
-	}
-
-	cmd2 := cmd
-
-	// Grab a run number, which we'll use to log stuff about the
-	// execution.
-	r.mu.Lock()
-	runNum := r.runNum
-	r.runNum++
-	r.mu.Unlock()
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	logLines := func(rd io.Reader, kind string) {
-		s := bufio.NewScanner(rd)
-		for s.Scan() {
-			r.Log("<%6d> <stdout> %s", runNum, s.Text())
-		}
-		if s.Err() != nil {
-			r.Log("<%6d> <stdout> Error while reading stdout: %s", runNum, s.Err())
-		}
-		wg.Done()
-	}
-
-	stdoutr, stdoutw := io.Pipe()
-	go logLines(stdoutr, "stdout")
-	if cmd2.Stdout != nil {
-		cmd2.Stdout = io.MultiWriter(stdoutw, cmd2.Stdout)
-	} else {
-		cmd2.Stdout = stdoutw
-	}
-
-	stderrr, stderrw := io.Pipe()
-	go logLines(stderrr, "stderr")
-	if cmd2.Stderr != nil {
-		cmd2.Stderr = io.MultiWriter(stderrw, cmd2.Stderr)
-	} else {
-		cmd2.Stderr = stderrw
-	}
-	err := r.e.Run(cmd2)
-	stdoutw.Close()
-	stderrw.Close()
-
-	wg.Wait()
-	return err
-}
-
-func (r *RunContext) Run(argv ...string) error {
-	return r.RunCommand(Command{
-		Path: argv[0],
-		Args: argv[1:],
-	})
-}
-
-func (r *RunContext) Log(msg string, args ...interface{}) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	fmt.Fprintf(r.log, msg+"\n", args...)
-}
-
-func (r *RunContext) LogOutput(log bool) {
-	r.logOutput = log
 }
 
 type Role struct {
